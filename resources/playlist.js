@@ -218,7 +218,7 @@ function playlist(active) {
                 li.addClass("queue_temp")
             }
             if (addbtns) {
-                addQueueButtons(li)
+                addQueueButtons(li, item)
             }
             return li
         };
@@ -233,9 +233,9 @@ function playlist(active) {
         var _aQB = window.addQueueButtons;
         window.addQueueButtonsOld = _aQB;
         $("#queue").data("marked", []);
-        window.addQueueButtons = function(li) {
+        window.addQueueButtons = function(li, item) {
             li.find(".qbtn-mark").remove();
-            window.addQueueButtonsOld(li);
+            window.addQueueButtonsOld(li, item);
             const usingGroup = hasPermission("playlistjump") || hasPermission("playlistmove") || hasPermission("settemp") || hasPermission("playlistdelete");
             var uid = li.data("uid");
             var blame = li.data("blame");
