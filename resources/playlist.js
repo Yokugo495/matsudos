@@ -204,7 +204,7 @@ function playlist(active) {
             li.data("uid", item.uid);
             li.data("media", video);
             li.data("temp", item.temp);
-            li.data("blame", item.queueby);
+            li.data("queueby", item.queueby);
             if (video.thumb) {
                 $("<img/>").attr("src", video.thumb.url).css("float", "left").css("clear", "both").appendTo(li)
             }
@@ -218,7 +218,7 @@ function playlist(active) {
                 li.addClass("queue_temp")
             }
             if (addbtns) {
-                addQueueButtons(li, item)
+                addQueueButtons(li)
             }
             return li
         };
@@ -233,12 +233,12 @@ function playlist(active) {
         var _aQB = window.addQueueButtons;
         window.addQueueButtonsOld = _aQB;
         $("#queue").data("marked", []);
-        window.addQueueButtons = function(li, item) {
+        window.addQueueButtons = function(li) {
             li.find(".qbtn-mark").remove();
-            window.addQueueButtonsOld(li, item);
+            window.addQueueButtonsOld(li);
             const usingGroup = hasPermission("playlistjump") || hasPermission("playlistmove") || hasPermission("settemp") || hasPermission("playlistdelete");
             var uid = li.data("uid");
-            var blame = li.data("blame");
+            var blame = li.data("queueby");
             var menu = li.find(".btn-group");
             var title = li.find(".qe_title");
             var mark = $("#queue").data("marked").includes(uid);
@@ -353,7 +353,7 @@ function playlist(active) {
                 title: data["title"],
                 link: formatURL(data),
                 duration: data["duration"],
-                blame: $(".pluid-" + PL_CURRENT).data("blame")
+                blame: $(".pluid-" + PL_CURRENT).data("queueby")
             };
             if (newEntry.link === "#") {
                 return
