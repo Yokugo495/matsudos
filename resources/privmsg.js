@@ -124,7 +124,7 @@
         });
         var buffer = $("<div/>").addClass("pm-buffer linewrap").appendTo(body);
         $("<hr/>").appendTo(body);
-        var input = $("<input/>").addClass("form-control pm-input").attr("type", "text").attr("maxlength", 240).appendTo(body);
+        var input = $("<input/>").addClass("form-control pm-input").attr("type", "text").attr("maxlength", 500).appendTo(body);
         input.keydown(function(ev) {
             if (ev.keyCode === 13) {
                 if (CHATTHROTTLE) {
