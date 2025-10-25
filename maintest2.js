@@ -1,7 +1,13 @@
-const twemojiScript = document.createElement('script');
-twemojiScript.src = "https://unpkg.com/twemoji@latest/dist/twemoji.min.js";
-twemojiScript.crossOrigin = "anonymous";
-document.head.appendChild(twemojiScript);
+let twemojiLoaded = false;
+try {
+    const twemojiScript = document.createElement('script');
+    twemojiScript.src = "https://unpkg.com/twemoji@latest/dist/twemoji.min.js";
+    twemojiScript.crossOrigin = "anonymous";
+    document.head.appendChild(twemojiScript);
+    twemojiLoaded = true;
+} catch (e) {
+    console.log('Failed to load twemoji for oshi marks:', e);
+}
 
 const customObjects = (() => {
     'use strict';
@@ -232,6 +238,18 @@ const customObjects = (() => {
             
             $('#pollwrap .well.muted').detach().prependTo('#pollhistory');
             redoPollwrap();
+
+            const pollOptions = document.getElementById('pollwrap').getElementsByClassName('option');
+            Array.from(pollOptions).forEach(opt => {
+                const links = opt.getElementsByTagName('a');
+                if (!links.length) {
+                    return;
+                }
+
+                // Set poll text as link text, remove poll text node
+                links[0].innerText = opt.childNodes[1].data;
+                opt.removeChild(opt.childNodes[1]);
+            });
         };
         redoPollwrap();
         
@@ -259,6 +277,7 @@ const customObjects = (() => {
      * @prop {string?} start_actual
      * @prop {string?} placeholderType
      * @prop {string?} link
+     * @prop {string?} id
      * @prop {HolodexChannel} channel
      * @prop {HolodexChannel[]} mentions
      */
@@ -274,6 +293,7 @@ const customObjects = (() => {
         start = "";
         startMillis = 0;
         topic = "";
+        url = "";
     }
 
     class ChannelStreams {
@@ -485,6 +505,13 @@ const customObjects = (() => {
     const BASE_HOLODEX_URL = 'https://holodex.net/api/v2/live?';
     const HOLODEX_URL_PARAMS = (new URLSearchParams(HOLODEX_REQ_PARAMS)).toString();
     const HOLODEX_REQ_URL = BASE_HOLODEX_URL + HOLODEX_URL_PARAMS;
+    const TOPIC_BLACKLIST = [
+        'membersonly',
+        'superchat_reading',
+        'music_cover',
+        'original_song',
+        'freechat'
+    ];
     
     const createStreamPoll = async () => {
         const req = fetch(HOLODEX_REQ_URL, {
@@ -560,10 +587,15 @@ const customObjects = (() => {
             return nameSplit[1];
         }
         
-        // schema can be found at https://holodex.stoplight.io/docs/holodex/ba328f7332280-query-videos
+        // schema can be found at https://docs.holodex.net/#/paths/~1videos/get
         // Figure out which streams to list
         streams.forEach(stream => {
             const streamData = new StreamData();
+            if (stream.link) {
+                streamData.url = stream.link;
+            } else if (stream.id) {
+                streamData.url = `https://youtu.be/${stream.id}`
+            }
 
             if (stream.type == "placeholder") {
                 if (stream.placeholderType != "external-stream" || !(/twitch\.tv/i).test(stream.link)) {
@@ -581,7 +613,7 @@ const customObjects = (() => {
                 return;
 
             if (stream.topic_id) {
-                if (stream.topic_id.toLowerCase() == 'membersonly')
+                if (TOPIC_BLACKLIST.includes(stream.topic_id.toLowerCase()))
                     return;
 
                 let topic = stream.topic_id.replaceAll('_', ' ');
@@ -758,6 +790,8 @@ const customObjects = (() => {
                 optStr += ` on ${streamData.where}`;
             if (streamData.start)
                 optStr += ` (${streamData.start})`;
+            if (streamData.url)
+                optStr += ` ${streamData.url}`;
             
             options[optIdx].value = optStr;
             streamData.listed = true;
@@ -2038,20 +2072,24 @@ const customObjects = (() => {
                 const oshiSearch = u.data("profile").text.match(/oshi:\"(\w)*\"/);
                 const oshi = oshiSearch ? oshiSearch[0].substring(6, oshiSearch[0].length - 1) : null;
                 if (oshi && holodata[oshi]) {
-                    if (systemOshiMarks) {
+                    if (systemOshiMarks || !twemojiLoaded) {
                         nameElem.innerHTML = `${username} <span class="oshi-mark" style="font-weight:100 !important">${holodata[oshi]}</span>`;
                     }
                     else {
-                        const oshiSpan = document.createElement('span');
-                        oshiSpan.style.fontWeight = "100 !important";
-                        oshiSpan.innerText = holodata[oshi];
-                        twemoji.parse(oshiSpan, {
-                            base: 'https://archive.mogu.cafe/files/twemoji/',
-                            folder: 'svg',
-                            ext: '.svg',
-                        });
-                        nameElem.innerHTML = `${username} `;
-                        nameElem.appendChild(oshiSpan);
+                        try {
+                            const oshiSpan = document.createElement('span');
+                            oshiSpan.style.fontWeight = "100 !important";
+                            oshiSpan.innerText = holodata[oshi];
+                            twemoji.parse(oshiSpan, {
+                                base: 'https://archive.mogu.cafe/files/twemoji/',
+                                folder: 'svg',
+                                ext: '.svg',
+                            });
+                            nameElem.innerHTML = `${username} `;
+                            nameElem.appendChild(oshiSpan);
+                        } catch (e) {
+                            nameElem.innerHTML = `${username} <span class="oshi-mark" style="font-weight:100 !important">${holodata[oshi]}</span>`;
+                        }
                     }
                 }
             });
